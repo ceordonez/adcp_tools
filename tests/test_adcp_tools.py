@@ -73,3 +73,29 @@ def test_track_mask_removes_land_and_crossovers():
     assert kept.total_bounds[2] == pytest.approx(1010, abs=1)
     cross = bathymetry.crossovers(points, pixel=20)
     assert np.allclose(cross["Range_m"], 1.0)
+
+
+def test_beam_to_earth_recovers_a_known_flow():
+    from adcp_tools import transform
+
+    rng = np.random.default_rng(2)
+    n = 50
+    heading, pitch, roll = rng.uniform(0, 360, n), rng.uniform(-8, 8, n), rng.uniform(-8, 8, n)
+    truth = np.stack([np.full(n, 0.3), np.full(n, -0.5), np.full(n, 0.02)])  # east, north, up
+    # Instrument velocity seen by the head: the inverse (transpose) of the rotation
+    unit = np.eye(3)[:, :, None] * np.ones(n)
+    columns = [transform.instrument_to_earth(np.r_[unit[:, k]], heading, pitch, roll) for k in range(3)]
+    rotation = np.stack(columns, axis=1)  # (earth, instrument, ensemble)
+    xyz = np.einsum("jin,jn->in", rotation, truth)
+    # Beam velocities of that instrument velocity (convex head, 25 deg, positive towards the head)
+    s, c = np.sin(np.radians(25)), np.cos(np.radians(25))
+    u = np.array([[-s, 0, -c], [s, 0, -c], [0, s, -c], [0, -s, -c]])
+    beams = -(u @ xyz)
+    back = transform.instrument_to_earth(transform.beam_to_instrument(beams, 25), heading, pitch, roll)
+    assert np.allclose(back[:3], truth, atol=1e-12)
+    assert np.allclose(back[3], 0, atol=1e-12)
+    # One beam missing: the 3-beam solution gives the same velocity, error unknown
+    beams[2, 0] = np.nan
+    three = transform.instrument_to_earth(transform.beam_to_instrument(beams, 25, three_beam_solutions=True), heading, pitch, roll)
+    assert np.allclose(three[:3, 0], truth[:, 0], atol=1e-12)
+    assert np.isnan(three[3, 0])

@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 from read_instruments import PD0
 
+from adcp_tools.transform import beam_to_instrument
+
 
 def water_depth(pd0: PD0, draft: float, tilt_correction: bool = False) -> pd.Series:
     """Water depth below the surface at each ensemble (m); NaN without a bottom.
@@ -29,33 +31,14 @@ def water_depth(pd0: PD0, draft: float, tilt_correction: bool = False) -> pd.Ser
     return pd.Series(vertical + draft, index=pd0.time, name="Depth_measured_m")
 
 
-def beam_to_instrument(beams: np.ndarray, beam_angle: float, convex: bool = True) -> np.ndarray:
-    """Janus 4-beam velocities to instrument x, y, z and error velocity.
-
-    `beams` has the four beams on its first axis. RDI ADCP Coordinate
-    Transformation (P/N 951-6079-00), eq. 13.
-    """
-    theta = np.radians(beam_angle)
-    a = 1 / (2 * np.sin(theta))
-    b = 1 / (4 * np.cos(theta))
-    c = 1.0 if convex else -1.0
-    d = a / np.sqrt(2)
-    b1, b2, b3, b4 = beams
-    return np.stack([
-        c * a * (b1 - b2),
-        c * a * (b4 - b3),
-        b * (b1 + b2 + b3 + b4),
-        d * (b1 + b2 - b3 - b4),
-    ])
-
-
-def boat_speed(pd0: PD0) -> pd.Series:
+def boat_speed(pd0: PD0, beam_angle: float | None = None) -> pd.Series:
     """Horizontal boat speed over ground from the bottom track (m/s).
 
-    Beam velocities are transformed to the instrument frame first; in the
-    other frames the first two components are horizontal (to within the tilt).
+    Beam velocities are transformed to the instrument frame first, with
+    `beam_angle` (degrees; default the file's, else 20); in the other frames
+    the first two components are horizontal (to within the tilt).
     """
     bt = pd0.bt_vel
     if pd0.coordinates == "beam":
-        bt = beam_to_instrument(bt, pd0.beam_angle or 20.0)
+        bt = beam_to_instrument(bt, beam_angle or pd0.beam_angle or 20.0)
     return pd.Series(np.hypot(bt[0], bt[1]), index=pd0.time, name="BoatSpeed_ms")

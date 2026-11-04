@@ -6,8 +6,9 @@ projects that survey with the ADCP (SFM, BlueMap).
 
 | Module | What |
 | --- | --- |
-| `depth` | `water_depth` (bottom-track range + draft, optional tilt correction), `boat_speed` (bottom track, any coordinate system), `beam_to_instrument` |
-| `profiles` | `prepare` (earth velocities, depth, cell depths of one file), `quality_mask` (correlation, echo, percent good, side lobe, boat speed); ship coordinates only |
+| `depth` | `water_depth` (bottom-track range + draft, optional tilt correction), `boat_speed` (bottom track, any coordinate system) |
+| `transform` | `beam_to_instrument` (with 3-beam solutions), `instrument_to_earth` (heading, pitch, roll), `ship_to_earth` (RDI coordinate transformation manual) |
+| `profiles` | `prepare` (earth velocities, depth, cell depths of one file), `quality_mask` (correlation, echo, percent good, side lobe, boat speed); ship or beam coordinates |
 | `dissipation` | `dissipation`: TKE dissipation rate per window, structure function method (Wiles et al. 2006; McGinnis et al. 2014) |
 | `discharge` | `transect_discharge` (cross-product method, power-law top/bottom, edges), `downstream_bearing` |
 | `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed` |
@@ -58,9 +59,11 @@ bathymetry.write_geotiff("bathymetry.tif", grid, transform, "EPSG:32628")
 - **Validation**: `cross_validate` leaves out every 5th group (a file, or a
   block of minutes); `crossovers` gives the depth differences between surveys
   of the same cell, mostly the tide when it is not corrected.
-- **Velocities** (`profiles`) are handled in ship coordinates only (the SFM
-  2025 files); beam coordinates (BlueMap) need a beam-to-earth transform,
-  not written yet. Depth, boat speed and bathymetry work in any coordinates.
+- **Velocities** (`profiles`): ship coordinates (SFM 2025) reproduce
+  WinRiver II exactly. Beam coordinates (BlueMap Sentinel V, 25 degree beams,
+  to pass as `beam_angle`) reproduce WinRiver's boat velocity and 90.5% of
+  its water cells; the rest differ by WinRiver's bin mapping, not applied
+  here, which adds no bias (see the `profiles` docstring).
 
 ## Tests
 
