@@ -133,3 +133,41 @@ def test_fit_deviation_recovers_curve_and_day_constants():
     coefficients, fitted = fit_deviation(data, group=pd.Series(day))
     assert np.allclose(coefficients, truth, atol=0.3)
     assert [fitted.get(d, 0.0) for d in "abc"] == pytest.approx([0.0, 0.0, 12.0], abs=0.3)
+
+
+def test_straight_legs_split_at_turns_and_stops():
+    from adcp_tools.discharge import straight_legs
+    from adcp_tools.profiles import Profiles
+
+    # East at 2 m/s for 10 min, stop 2 min, north for 10 min, then a 90-deg turn west for 10 min
+    n = 32 * 60
+    t = pd.date_range("2026-01-01", periods=n, freq="1s", tz="UTC")
+    e = np.r_[np.full(600, 2.0), np.zeros(120), np.zeros(600), np.full(600, -2.0)]
+    north = np.r_[np.zeros(600), np.zeros(120), np.full(600, 2.0), np.zeros(600)]
+    cells = np.zeros((3, n))
+    p = Profiles(time=t, cell_depth=np.array([1.0, 1.5, 2.0]), cell_size=0.5, water_depth=np.full(n, 5.0),
+                 east=cells, north=cells, up=cells, boat_east=e, boat_north=north, ship=np.zeros((4, 3, n)),
+                 good=np.ones((3, n), bool), beam_angle=25.0, ensembles=pd.DataFrame(index=t))
+    legs = straight_legs(p, min_length=500)
+    assert len(legs) == 3
+    starts = [s.start for s in legs]
+    assert abs(starts[0] - 0) <= 30 and abs(starts[1] - 720) <= 30 and abs(starts[2] - 1320) <= 30
+
+
+def test_merge_legs_joins_a_crossing_cut_by_a_stop():
+    from adcp_tools.discharge import merge_legs, straight_legs
+    from adcp_tools.profiles import Profiles
+
+    # East 5 min, stop 3 min (CTD), east again 5 min, then north 5 min
+    e = np.r_[np.full(300, 2.0), np.zeros(180), np.full(300, 2.0), np.zeros(300)]
+    north = np.r_[np.zeros(780), np.full(300, 2.0)]
+    n = len(e)
+    t = pd.date_range("2026-01-01", periods=n, freq="1s", tz="UTC")
+    cells = np.zeros((2, n))
+    p = Profiles(time=t, cell_depth=np.array([1.0, 1.5]), cell_size=0.5, water_depth=np.full(n, 5.0), east=cells,
+                 north=cells, up=cells, boat_east=e, boat_north=north, ship=np.zeros((4, 2, n)),
+                 good=np.ones((2, n), bool), beam_angle=25.0, ensembles=pd.DataFrame(index=t))
+    legs = straight_legs(p, min_length=300)
+    assert len(legs) == 3
+    merged = merge_legs(p, legs, max_gap="5min")
+    assert len(merged) == 2 and merged[0].start == legs[0].start and merged[0].stop == legs[1].stop

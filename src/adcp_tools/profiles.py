@@ -189,3 +189,23 @@ def quality_mask(
     good &= pd0.pgood[3] >= pgood_min
     good &= np.isfinite(pd0.vel[:3]).all(axis=0)
     return good & geometry_mask(profiles, draft, bt_speed_max)
+
+
+def subset(profiles: Profiles, ensembles: slice | np.ndarray) -> Profiles:
+    """The same profiles for some ensembles only (a slice, indices or a boolean mask)."""
+    return Profiles(
+        time=profiles.time[ensembles],
+        cell_depth=profiles.cell_depth,
+        cell_size=profiles.cell_size,
+        water_depth=profiles.water_depth[ensembles],
+        east=profiles.east[:, ensembles],
+        north=profiles.north[:, ensembles],
+        up=profiles.up[:, ensembles],
+        boat_east=profiles.boat_east[ensembles],
+        boat_north=profiles.boat_north[ensembles],
+        ship=profiles.ship[:, :, ensembles],
+        good=profiles.good[:, ensembles],
+        beam_angle=profiles.beam_angle,
+        ensembles=profiles.ensembles.iloc[ensembles] if not isinstance(ensembles, np.ndarray) or ensembles.dtype != bool
+        else profiles.ensembles[ensembles],
+    )

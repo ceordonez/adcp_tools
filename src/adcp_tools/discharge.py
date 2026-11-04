@@ -49,9 +49,102 @@ def downstream_bearing(profiles: list[Profiles], station: tuple[float, float], m
     return min((axis, (axis + 180) % 360), key=difference)
 
 
+def straight_legs(
+    profiles: Profiles,
+    min_length: float = 300.0,
+    max_turn: float = 25.0,
+    min_speed: float = 0.5,
+    smooth: str = "60s",
+    min_straightness: float = 0.9,
+) -> list[slice]:
+    """Straight runs of the boat in one file, as slices of its ensembles.
+
+    The track is the bottom-track boat velocity integrated over time (as
+    WinRiver does; no GPS needed). The course is smoothed over `smooth`; a
+    leg ends when the boat slows below `min_speed` or its course turns more
+    than `max_turn` degrees from the leg's initial course. Legs shorter than
+    `min_length` (m, end to end) or less straight than `min_straightness`
+    (end-to-end distance / path length) are dropped.
+    """
+    time = profiles.time
+    dt = ensemble_durations(time)
+    boat = pd.DataFrame({"e": profiles.boat_east, "n": profiles.boat_north}, index=time)
+    boat = boat[~boat.index.duplicated()].reindex(time, method="nearest")
+    smoothed = boat.interpolate(limit_area="inside").rolling(smooth, center=True, min_periods=3).mean()
+    se, sn = smoothed["e"].to_numpy(), smoothed["n"].to_numpy()
+    speed = np.hypot(se, sn)
+    course = np.degrees(np.arctan2(se, sn))
+    x = np.nancumsum(np.nan_to_num(profiles.boat_east) * dt)
+    y = np.nancumsum(np.nan_to_num(profiles.boat_north) * dt)
+    step = np.hypot(np.nan_to_num(profiles.boat_east), np.nan_to_num(profiles.boat_north)) * dt
+    legs, start = [], None
+    for i in range(len(time) + 1):
+        moving = i < len(time) and np.isfinite(speed[i]) and speed[i] >= min_speed
+        if start is None:
+            if moving:
+                start = i
+            continue
+        turned = moving and abs((course[i] - course[start] + 180) % 360 - 180) > max_turn
+        if not moving or turned:
+            end = i
+            net = np.hypot(x[end - 1] - x[start], y[end - 1] - y[start])
+            path = step[start:end].sum()
+            if net >= min_length and path > 0 and net / path >= min_straightness:
+                legs.append(slice(start, end))
+            start = i if turned else None
+    return legs
+
+
+def merge_legs(profiles: Profiles, legs: list[slice], max_gap: str = "20min", max_turn: float = 30.0) -> list[slice]:
+    """Join consecutive legs that continue in the same direction after a short stop.
+
+    A crossing interrupted by a stop (a CTD cast, a sample) is cut into legs
+    by `straight_legs`; legs less than `max_gap` apart whose bottom-track
+    directions differ by less than `max_turn` degrees become one slice,
+    including the stop (a stopped boat adds ~nothing to the cross-product
+    discharge).
+    """
+    if not legs:
+        return []
+    dt = ensemble_durations(profiles.time)
+
+    def direction(leg):
+        return bearing(np.nansum(profiles.boat_east[leg] * dt[leg]), np.nansum(profiles.boat_north[leg] * dt[leg]))
+
+    merged = [legs[0]]
+    for leg in legs[1:]:
+        last = merged[-1]
+        gap = profiles.time[leg.start] - profiles.time[last.stop - 1]
+        turn = abs((direction(leg) - direction(last) + 180) % 360 - 180)
+        if gap <= pd.Timedelta(max_gap) and turn <= max_turn:
+            merged[-1] = slice(last.start, leg.stop)
+        else:
+            merged.append(leg)
+    return merged
+
+
+def flow_axis(profiles: Profiles) -> tuple[float, float]:
+    """Principal axis of the depth-averaged velocities (degrees, 0-180) and its share of the variance.
+
+    Tidal flow runs along the channel, both ways; the share (0.5 to 1) says
+    how well the axis is defined.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        east = np.nanmean(np.where(profiles.good, profiles.east, np.nan), axis=0)
+        north = np.nanmean(np.where(profiles.good, profiles.north, np.nan), axis=0)
+    ok = np.isfinite(east) & np.isfinite(north)
+    if ok.sum() < 3:
+        return np.nan, np.nan
+    # Second moments about zero (not the mean): a steady flow defines the axis too
+    m = np.array([[np.mean(east[ok] ** 2), np.mean(east[ok] * north[ok])], [np.mean(east[ok] * north[ok]), np.mean(north[ok] ** 2)]])
+    values, vectors = np.linalg.eigh(m)
+    return bearing(*vectors[:, -1]) % 180, values[-1] / values.sum()
+
+
 def ensemble_durations(time: pd.DatetimeIndex) -> np.ndarray:
     """Duration of each ensemble (s): the time to the next one, the last repeats."""
-    dt = np.diff(time.asi8) / 1e9
+    dt = np.diff(pd.DatetimeIndex(time).as_unit("ns").asi8) / 1e9
     return np.append(dt, np.median(dt) if dt.size else 0.0)
 
 

@@ -8,9 +8,9 @@ projects that survey with the ADCP (SFM, BlueMap).
 | --- | --- |
 | `depth` | `water_depth` (bottom-track range + draft, optional tilt correction), `boat_speed` (bottom track, any coordinate system) |
 | `transform` | `beam_to_instrument` (with 3-beam solutions), `instrument_to_earth` (heading, pitch, roll), `ship_to_earth` (RDI coordinate transformation manual) |
-| `profiles` | `prepare` (earth velocities, depth, cell depths of one file), `quality_mask` (correlation, echo, percent good, side lobe, boat speed); ship or beam coordinates |
+| `profiles` | `subset` (some ensembles of a file), `prepare` (earth velocities, depth, cell depths of one file), `quality_mask` (correlation, echo, percent good, side lobe, boat speed); ship or beam coordinates |
 | `dissipation` | `dissipation`: TKE dissipation rate per window, structure function method (Wiles et al. 2006; McGinnis et al. 2014) |
-| `discharge` | `transect_discharge` (cross-product method, power-law top/bottom, edges), `downstream_bearing` |
+| `discharge` | `transect_discharge` (cross-product method, power-law top/bottom, edges), `downstream_bearing`, `straight_legs` (straight runs of the boat in a long file), `merge_legs` (join legs cut by a stop), `flow_axis` |
 | `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed`, `gps_velocity` |
 | `clock` | `fit_clock_offset`: ADCP clock offset by matching boat speed to GPS speed |
 | `compass` | `heading_offset` (GPS minus bottom-track boat direction), `fit_deviation` / `deviation` (compass deviation curve plus constants per day), `circular_median` |

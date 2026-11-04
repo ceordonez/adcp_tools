@@ -104,7 +104,7 @@ def dissipation(
         ``Epsilon_Wkg`` (log-mean over components), ``Noise_m3s3``, ``R2``
         (means) and ``n_fits``, indexed by the window centre time.
     """
-    dt = np.median(np.diff(profiles.time.asi8)) / 1e9
+    dt = np.median(np.diff(profiles.time.as_unit("ns").asi8)) / 1e9
     n_avg = max(1, int(round(avg_period_s / dt)))
     n_windows = len(profiles.time) // n_avg
     separations = np.arange(r_min_bins, r_max_bins + 1)
