@@ -99,3 +99,37 @@ def test_beam_to_earth_recovers_a_known_flow():
     three = transform.instrument_to_earth(transform.beam_to_instrument(beams, 25, three_beam_solutions=True), heading, pitch, roll)
     assert np.allclose(three[:3, 0], truth[:, 0], atol=1e-12)
     assert np.isnan(three[3, 0])
+
+
+def test_heading_offset_recovered():
+    from adcp_tools.compass import circular_median, heading_offset
+    from adcp_tools.positions import gps_velocity
+
+    t = pd.date_range("2026-01-01", periods=3600, freq="1s", tz="UTC")
+    course = np.radians(np.linspace(0, 720, len(t)))  # turning, all headings
+    east, north = 2.0 * np.sin(course), 2.0 * np.cos(course)
+    lat = np.degrees(np.cumsum(north) / 6_371_000.0)
+    lon = np.degrees(np.cumsum(east) / 6_371_000.0)
+    gps = pd.DataFrame({"Lat_deg": lat, "Lon_deg": lon}, index=t)
+    # Compass reads 4 deg too far clockwise: the bottom-track direction is rotated by +4
+    error = np.radians(4.0)
+    adcp = pd.DataFrame({"East_ms": east * np.cos(error) + north * np.sin(error),
+                         "North_ms": -east * np.sin(error) + north * np.cos(error),
+                         "Heading_deg": np.degrees(course) % 360}, index=t)
+    fit = heading_offset(adcp, gps_velocity(gps, "10s"), bin="10s")
+    assert circular_median(fit["Offset_deg"]) == pytest.approx(-4.0, abs=0.3)
+
+
+def test_fit_deviation_recovers_curve_and_day_constants():
+    from adcp_tools.compass import deviation, fit_deviation
+
+    rng = np.random.default_rng(3)
+    heading = rng.uniform(0, 360, 3000)
+    day = np.repeat(["a", "b", "c"], 1000)
+    truth = [-15.0, 4.0, -7.0, -11.0, 5.0]
+    constants = {"a": 0.0, "b": 0.0, "c": 12.0}
+    offset = deviation(heading, truth) + pd.Series(day).map(constants).to_numpy() + rng.normal(0, 1, 3000)
+    data = pd.DataFrame({"Offset_deg": offset, "Heading_deg": heading})
+    coefficients, fitted = fit_deviation(data, group=pd.Series(day))
+    assert np.allclose(coefficients, truth, atol=0.3)
+    assert [fitted.get(d, 0.0) for d in "abc"] == pytest.approx([0.0, 0.0, 12.0], abs=0.3)

@@ -49,3 +49,16 @@ def gps_speed(gps: pd.DataFrame, bin: str = "30s") -> pd.Series:
     # Speed between bin i-1 and i, timed at the boundary between them
     speed = pd.Series(d / dt, index=means.index, name="GPSSpeed_ms")
     return speed
+
+
+def gps_velocity(gps: pd.DataFrame, bin: str = "30s") -> pd.DataFrame:
+    """East and north velocity over ground (m/s) between successive `bin` means of the track.
+
+    Timed like `gps_speed`: at the boundary between the two bins.
+    """
+    means = gps[["Lat_deg", "Lon_deg"]].resample(bin).mean()
+    dt = pd.Timedelta(bin).total_seconds()
+    lat = np.radians(means["Lat_deg"])
+    east = np.radians(means["Lon_deg"].diff()) * np.cos(lat) * EARTH_RADIUS_M / dt
+    north = np.radians(means["Lat_deg"].diff()) * EARTH_RADIUS_M / dt
+    return pd.DataFrame({"East_ms": east, "North_ms": north}, index=means.index)

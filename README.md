@@ -11,8 +11,9 @@ projects that survey with the ADCP (SFM, BlueMap).
 | `profiles` | `prepare` (earth velocities, depth, cell depths of one file), `quality_mask` (correlation, echo, percent good, side lobe, boat speed); ship or beam coordinates |
 | `dissipation` | `dissipation`: TKE dissipation rate per window, structure function method (Wiles et al. 2006; McGinnis et al. 2014) |
 | `discharge` | `transect_discharge` (cross-product method, power-law top/bottom, edges), `downstream_bearing` |
-| `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed` |
+| `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed`, `gps_velocity` |
 | `clock` | `fit_clock_offset`: ADCP clock offset by matching boat speed to GPS speed |
+| `compass` | `heading_offset` (GPS minus bottom-track boat direction), `fit_deviation` / `deviation` (compass deviation curve plus constants per day), `circular_median` |
 | `bathymetry` | `soundings`, `tide_anomaly`, `to_points`, `track_mask`, `thin`, `interpolate`, `cross_validate`, `crossovers`, `write_geotiff` |
 
 What stays in each project: which files to read, the clock offset and the
