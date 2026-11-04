@@ -1,0 +1,66 @@
+# adcp-tools
+
+Processing of Teledyne RDI ADCP data read with
+[`read_instruments`](../read_instruments) (`read_pd0`), shared by the
+projects that survey with the ADCP (SFM, BlueMap).
+
+| Module | What |
+| --- | --- |
+| `depth` | `water_depth` (bottom-track range + draft, optional tilt correction), `boat_speed` (bottom track, any coordinate system), `beam_to_instrument` |
+| `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed` |
+| `clock` | `fit_clock_offset`: ADCP clock offset by matching boat speed to GPS speed |
+| `bathymetry` | `soundings`, `tide_anomaly`, `to_points`, `track_mask`, `thin`, `interpolate`, `cross_validate`, `crossovers`, `write_geotiff` |
+
+What stays in each project: which files to read, the clock offset and the
+draft (config), the GPS and tide sources, the water mask, the figures.
+
+## Install
+
+```
+uv add --editable /path/to/adcp_tools            # extras: adcp-tools[tide], adcp-tools[kriging]
+```
+
+## Usage
+
+```python
+import read_instruments as ri
+from adcp_tools import bathymetry, boat_speed, fit_clock_offset, gps_positions, gps_speed, water_depth
+
+pd0 = ri.read_pd0("T10_0_000.PD0", utc_offset="UTC")
+gps = ri.read_gps("GPS/", resample=None)
+
+# Clock: true time = ADCP time + best offset
+fit = fit_clock_offset(boat_speed(pd0), gps_speed(gps), search=("-2h", "2h"))
+offset = fit["r"].idxmax()
+
+depth = water_depth(pd0, draft=0.30, tilt_correction=True)
+depth.index = depth.index + offset
+found = bathymetry.soundings(depth, gps_positions(depth.index, gps, "30s"), tide=None, bin_seconds=5)
+
+points = bathymetry.to_points(found, "EPSG:32628")
+mask = bathymetry.track_mask(points, buffer=250, land=land_polygons, keep=50)  # or a water polygon
+grid, transform = bathymetry.interpolate(points, mask, pixel=25, method="linear", max_distance=250)
+bathymetry.write_geotiff("bathymetry.tif", grid, transform, "EPSG:32628")
+```
+
+## Choices
+
+- **Depth** = mean bottom-track range of the beams + draft, without a
+  cos(beam angle) factor: RDI's range is vertical already (WinRiver II gives
+  the same).
+- **Tide**: depth at mean level = measured - anomaly (`tide_anomaly` predicts
+  the anomaly with utide outside the gauge record).
+- **Thinning**: soundings are averaged per grid cell before interpolating,
+  so stops (anchored stations, drifts) do not outweigh the transects.
+- **Validation**: `cross_validate` leaves out every 5th group (a file, or a
+  block of minutes); `crossovers` gives the depth differences between surveys
+  of the same cell, mostly the tide when it is not corrected.
+- Velocities (beam/ship to earth, QC, dissipation, discharge) are still in
+  the SFM project (`sfm/adcp.py`), for ship coordinates only; they move here
+  when SFM is refactored.
+
+## Tests
+
+```
+uv run pytest
+```

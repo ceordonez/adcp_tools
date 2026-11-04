@@ -1,0 +1,30 @@
+[project]
+name = "adcp-tools"
+version = "0.1.0"
+description = "Processing of Teledyne RDI ADCP data read with read_instruments: bottom-track depth, boat speed, ADCP clock check, GPS positioning, and bathymetry gridding"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "geopandas>=1.1.1",
+    "numpy>=2.0",
+    "pandas>=2.3.3",
+    "rasterio>=1.4",
+    "read-instruments",
+    "scipy>=1.14",
+]
+
+[project.optional-dependencies]
+tide = ["utide>=0.3.1"]
+kriging = ["pykrige>=1.7"]
+
+[tool.uv.sources]
+read-instruments = { path = "../read_instruments", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
