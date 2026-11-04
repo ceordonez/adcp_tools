@@ -8,10 +8,11 @@
 - ``positions``: positions and speed from a GPS track;
 - ``clock``: ADCP clock offset from boat speeds;
 - ``compass``: heading correction from the GPS track;
+- ``station``: records at a fixed point (stationary periods, tidal fits);
 - ``bathymetry``: soundings, gridding, validation, GeoTIFF.
 """
 
-from adcp_tools import bathymetry, clock, compass, depth, discharge, dissipation, positions, profiles, transform
+from adcp_tools import bathymetry, clock, compass, depth, discharge, dissipation, positions, profiles, station, transform
 from adcp_tools.clock import fit_clock_offset
 from adcp_tools.depth import boat_speed, water_depth
 from adcp_tools.transform import beam_to_instrument
@@ -33,6 +34,7 @@ __all__ = [
     "gps_velocity",
     "positions",
     "profiles",
+    "station",
     "transform",
     "water_depth",
 ]

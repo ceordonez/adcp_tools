@@ -14,6 +14,7 @@ projects that survey with the ADCP (SFM, BlueMap).
 | `positions` | `positions` (GPS position at given times, without bridging gaps), `gps_speed`, `gps_velocity` |
 | `clock` | `fit_clock_offset`: ADCP clock offset by matching boat speed to GPS speed |
 | `compass` | `heading_offset` (GPS minus bottom-track boat direction), `fit_deviation` / `deviation` (compass deviation curve plus constants per day), `circular_median` |
+| `station` | `stationary_periods` (boat at anchor in a file), `harmonic_fit` (mean + tidal constituents, peak times), `principal_axis` |
 | `bathymetry` | `soundings`, `tide_anomaly`, `to_points`, `track_mask`, `thin`, `interpolate`, `cross_validate`, `crossovers`, `write_geotiff` |
 
 What stays in each project: which files to read, the clock offset and the

@@ -171,3 +171,29 @@ def test_merge_legs_joins_a_crossing_cut_by_a_stop():
     assert len(legs) == 3
     merged = merge_legs(p, legs, max_gap="5min")
     assert len(merged) == 2 and merged[0].start == legs[0].start and merged[0].stop == legs[1].stop
+
+
+def test_harmonic_fit_and_stationary_periods():
+    from adcp_tools.profiles import Profiles
+    from adcp_tools.station import PERIODS_H, harmonic_fit, principal_axis, stationary_periods
+
+    t = pd.date_range("2025-10-22 15:00", periods=23 * 60, freq="1min", tz="UTC")
+    hours = (t - t[0]).total_seconds() / 3600
+    peak = 3.0  # M2 high water 3 h after the start
+    level = 0.9 * np.cos(2 * np.pi * (hours - peak) / PERIODS_H["M2"]) + 0.1 * np.cos(2 * np.pi * hours / PERIODS_H["M4"])
+    fit = harmonic_fit(pd.Series(level + 14.0, index=t), ["M2", "M4"])
+    assert fit["mean"] == pytest.approx(14.0, abs=1e-6)
+    assert fit["M2_amp"] == pytest.approx(0.9, abs=1e-6)
+    assert fit["M4_amp"] == pytest.approx(0.1, abs=1e-6)
+    assert abs((fit["M2_peak"] - (t[0] + pd.Timedelta(hours=peak))).total_seconds()) < 1
+
+    # Moving 1 h, anchored 5 h (swinging at a few cm/s), moving 1 h
+    n = len(t[:7 * 60])
+    speed = np.r_[np.full(60, 2.0), 0.05 * np.abs(np.sin(np.arange(300) / 10)), np.full(60, 2.0)]
+    cells = np.zeros((2, n))
+    p = Profiles(time=t[:n], cell_depth=np.array([1.0, 1.5]), cell_size=0.5, water_depth=np.full(n, 5.0), east=cells,
+                 north=cells, up=cells, boat_east=speed, boat_north=np.zeros(n), ship=np.zeros((4, 2, n)),
+                 good=np.ones((2, n), bool), beam_angle=25.0, ensembles=pd.DataFrame(index=t[:n]))
+    periods = stationary_periods(p, min_duration="4h")
+    assert len(periods) == 1 and abs(periods[0].start - 60) <= 6 and abs(periods[0].stop - 360) <= 6
+    assert principal_axis(np.array([1.0, -1, 0.9, -0.8]), np.array([1.0, -1, 0.9, -0.8])) == pytest.approx(45.0)
