@@ -1,4 +1,4 @@
-"""Processing of Teledyne RDI ADCP data read with ``read_instruments.read_pd0``.
+"""Processing of Teledyne RDI ADCP data read with ``aphys_readers.read_pd0``.
 
 - ``depth``: water depth and boat speed from the bottom track;
 - ``transform``: beam, instrument and ship to earth coordinates;

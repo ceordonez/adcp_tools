@@ -1,7 +1,7 @@
 # adcp-tools
 
 Processing of Teledyne RDI ADCP data read with
-[`read_instruments`](../read_instruments) (`read_pd0`), shared by the
+[`aphys_readers`](../aphys_readers) (`read_pd0`), shared by the
 projects that survey with the ADCP (SFM, BlueMap).
 
 | Module | What |
@@ -29,7 +29,7 @@ uv add --editable /path/to/adcp_tools            # extras: adcp-tools[tide], adc
 ## Usage
 
 ```python
-import read_instruments as ri
+import aphys_readers as ri
 from adcp_tools import bathymetry, boat_speed, fit_clock_offset, gps_positions, gps_speed, water_depth
 
 pd0 = ri.read_pd0("T10_0_000.PD0", utc_offset="UTC")

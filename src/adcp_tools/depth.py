@@ -9,7 +9,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from read_instruments import PD0
+from aphys_readers import PD0
 
 from adcp_tools.transform import beam_to_instrument
 

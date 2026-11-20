@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import read_instruments as ri
+import aphys_readers as ri
 
 from adcp_tools import transform
 from adcp_tools.depth import water_depth
@@ -79,7 +79,7 @@ def prepare(
 
     Parameters
     ----------
-    pd0 : read_instruments.PD0
+    pd0 : aphys_readers.PD0
         The file, clock already corrected.
     draft : float
         Transducer depth below the surface (m).

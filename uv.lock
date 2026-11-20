@@ -15,11 +15,11 @@ name = "adcp-tools"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aphys-readers" },
     { name = "geopandas" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "rasterio" },
-    { name = "read-instruments" },
     { name = "scipy" },
 ]
 
@@ -38,12 +38,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aphys-readers", editable = "../aphys_readers" },
     { name = "geopandas", specifier = ">=1.1.1" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pykrige", marker = "extra == 'kriging'", specifier = ">=1.7" },
     { name = "rasterio", specifier = ">=1.4" },
-    { name = "read-instruments", editable = "../read_instruments" },
     { name = "scipy", specifier = ">=1.14" },
     { name = "utide", marker = "extra == 'tide'", specifier = ">=0.3.1" },
 ]
@@ -63,6 +63,30 @@ sdist = { url = "https://files.pythonhosted.org/packages/63/e9/4a4480601992a529c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3d/87/e62f55c956b583380e7d2a71705dfd431ee32dd1689d50491ba0c610fc11/affine-3.0.1-py3-none-any.whl", hash = "sha256:cda3b303325e7bf2bf34817e68753a0d1c4cacbdd451fe67c4878dc2ecbaa540", size = 10887, upload-time = "2026-08-28T18:38:12.837Z" },
 ]
+
+[[package]]
+name = "aphys-readers"
+version = "0.1.0"
+source = { editable = "../aphys_readers" }
+dependencies = [
+    { name = "chardet" },
+    { name = "numpy" },
+    { name = "openpyxl" },
+    { name = "pandas" },
+    { name = "xlrd" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "chardet", specifier = ">=5.2.0" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "xlrd", specifier = ">=2.0.2" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "attrs"
@@ -555,30 +579,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/6c/1565ec5f585610b215b080ca94dab518e2ba09c7b2d8ed8dd852e3eb7522/rasterio-1.5.2-cp315-cp315t-win_amd64.whl", hash = "sha256:3b8bec76f88ebe3437c4b8ecd85b0de7889ddab20e36d4145b7319f72add56fc", size = 31609662, upload-time = "2026-09-30T15:57:09.29Z" },
     { url = "https://files.pythonhosted.org/packages/4f/fd/922c271a56719d865d54403b4bc7bec26021ad780f15c42ab295319542b4/rasterio-1.5.2-cp315-cp315t-win_arm64.whl", hash = "sha256:8a201b3b52b102a210e52ad8ee342f22eb2bbdd3c1c5803b2e6e76e82533f0db", size = 30491831, upload-time = "2026-09-30T15:57:12.282Z" },
 ]
-
-[[package]]
-name = "read-instruments"
-version = "0.1.0"
-source = { editable = "../read_instruments" }
-dependencies = [
-    { name = "chardet" },
-    { name = "numpy" },
-    { name = "openpyxl" },
-    { name = "pandas" },
-    { name = "xlrd" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "chardet", specifier = ">=5.2.0" },
-    { name = "numpy", specifier = ">=2.0" },
-    { name = "openpyxl", specifier = ">=3.1.5" },
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "xlrd", specifier = ">=2.0.2" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "scipy"
